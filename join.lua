@@ -20,30 +20,38 @@ local prevteam = {}
 -- doesn't work on bots
 function Update(pl)
 	-- bots aren't included
-	if pl:IsBot() then return end
+	if pl:IsBot() then return false end
 	-- set next join based on previous team
-	Set(pl, GetCooldown(prevteam[pl:SteamID()]))
+	return Set(pl, GetCooldown(prevteam[pl:SteamID()]))
 end
 -- sets the next join for a player relative to the current time
+-- uses real-world timing
 -- doesn't work on bots
 function Set(pl, time)
 	-- bots aren't included
-	if pl:IsBot() then return end
+	if pl:IsBot() then return false end
+	-- time must be more than 0 seconds
+	time = tonumber(time) || 0
+	if time < 0 then return false end
 	
 	local id = pl:SteamID()
 
 	-- set next join
-	nextjoin[id] = RealTime() + (tonumber(time) || Get(pl))
+	nextjoin[id] = RealTime() + time
 	-- automatically clear next join
 	hook.Add("Think", "join_"..id, function()
 		-- still waiting to clear next join
-		if RealTime() < time then return end
+		if RealTime() < nextjoin[id] then return end
 		-- clear next join
 		nextjoin[id] = nil
 		hook.Remove("Think", "join_"..id)
 	end)
+
+	-- success
+	return true
 end
 -- returns the next join for a player
+-- uses real-world timing
 -- always returns 0 for bots
 function Get(pl)
 	-- bots aren't included
